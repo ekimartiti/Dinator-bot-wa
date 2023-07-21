@@ -5,12 +5,27 @@ const { dinatorG } = require(`./function/Ui`)
 console.log(dinatorG )
 const logg = require('pino')
 const fs = require("fs");
-const { serialize, fetchJson, getBuffer, nocache, uncache, status_Connection, Memory_Store } = require("./function/bot_function");
+const { serialize, fetchJson, getBuffer, nocache, uncache, status_Connection, Memory_Store, writeExifImg, writeExifVid } = require("./function/bot_function");
 let setting = JSON.parse(fs.readFileSync('./config.json'));
 let session = `./${setting.sessionName}.json`
 const { state, saveState } = useSingleFileAuthState(session)
+const keepAlive = require('./server');
+const Monitor = require('ping-monitor');
+
+keepAlive();
+const monitor = new Monitor({
+    website: '',
+    title: 'NAME',
+    interval: 2
+});
+
+monitor.on('up', (res) => console.log(`${res.website} its on.`));
+monitor.on('down', (res) => console.log(`${res.website} it has died - ${res.statusMessage}`));
+monitor.on('stop', (website) => console.log(`${website} has stopped.`) );
+monitor.on('error', (error) => console.log(error));
 const connectToWhatsApp = async () => {
 const mbot = makeWASocket({
+	version: [2, 2323, 4],
 printQRInTerminal: true,
 logger: logg({ level: 'fatal' }),
 browser: ['Dinator','Safari','1.0.0'],

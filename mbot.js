@@ -1,10 +1,29 @@
 "use strict";
+const fs = require('fs');
+const {
+  InworldClient,
+  InworldPacket,
+} = require ('@inworld/nodejs-sdk');
 const { BufferJSON, WA_DEFAULT_EPHEMERAL, proto, prepareWAMessageMedia, areJidsSameUser, getContentType } = require('@adiwajshing/baileys')
 const { downloadContentFromMessage, generateWAMessage, generateWAMessageFromContent, MessageType, buttonsMessage, MessageOptions, Mimetype } = require("@adiwajshing/baileys")
 const { exec, spawn } = require("child_process");
-const { removeEmojis, bytesToSize, getBuffer, fetchJson, getRandom, getGroupAdmins, runtime, sleep, makeid, isUrl } = require("./function/bot_function");
+const { removeEmojis, bytesToSize, getBuffer, fetchJson, getRandom, getGroupAdmins, runtime, sleep, makeid, isUrl} = require("./function/bot_function");
 const moment = require("moment-timezone");
 moment.tz.setDefault("Asia/Jakarta").locale("id");
+const dconfig = JSON.parse(fs.readFileSync("config.json"));
+const { pesan, errorC } = require(`./function/Ui`)
+//function
+function cekFile(path) {
+  try {
+    fs.accessSync(path, fs.constants.F_OK);
+    return true;
+  } catch (err) {
+    return false;
+  }
+}
+
+let arinSesi = {}
+let arinKoneksi = {}
 //cmd
 module.exports = async(mbot, msg, m, setting, store) => {
   try{
@@ -20,6 +39,7 @@ if (chats == undefined) { chats = '' }
 const prefix = /^[°•π÷×¶∆£¢€¥®™✓_=|~!?#$%^&.+-,\/\\©^]/.test(chats) ? chats.match(/^[°•π÷×¶∆£¢€¥®™✓_=|~!?#$%^&.+-,\/\\©^]/gi) : '#'
 const isGroup = msg.key.remoteJid.endsWith('@g.us')  
 const sender = isGroup ? (msg.key.participant ? msg.key.participant : msg.participant) : msg.key.remoteJid  
+const content = JSON.stringify(msg.message)
 const userId = sender.split("@")[0];
 const pushname = msg.pushName
 const body = chats.startsWith(prefix) ? chats : ''
@@ -61,14 +81,135 @@ const mention = typeof(mentionByTag) == 'string' ? [mentionByTag] : mentionByTag
 mention != undefined ? mention.push(mentionByReply) : []
 const mentionUser = mention != undefined ? mention.filter(n => n) : []
 const reply = (teks) => {mbot.sendMessage(from, { text: teks }, { quoted: msg })}
-
+const kirimPesan = (teks) => {mbot.sendMessage(from, { text: teks } )}
+const filePath = `db/sesi/${userId}.json`;
+function buatSesi (namaSesi){
+      var deposit_object = {
+      ID: require("crypto").randomBytes(5).toString("hex").toUpperCase(),
+      session: namaSesi,
+      data: {
+        tc: "",
+        tc2:""
+      }
+    }
+    fs.writeFileSync(filePath, JSON.stringify(deposit_object, null, 2))
+}
+function hapusSesi(filePath){
+fs.unlinkSync(filePath);
+}
+const fileAda = cekFile(filePath);
+let cekSesi = function(filePath){
+  try{
+    let data_deposit = JSON.parse(fs.readFileSync(filePath))
+  return data_deposit.session
+  }catch (err){
+    return false;
+  }
+}
+  const cekSesiHasil = cekSesi(filePath)
+  arinSesi[userId] ={ arin: new InworldClient()
+    // Get key and secret from the integrations page.
+    .setApiKey({
+      key: 'zNDzCzmDL8IwtblzBHTn8HIEgNlRAMZA',
+      secret: 'zzX10GsbzyWclYnUO1uoCOjqiBX3nmONC5O9yoGkdz1KAzLKkDmgFzfPmZhWRy0S',
+    })
+    // Setup a user name.
+    // It allows character to call you by name.
+    .setUser({ fullName: pushname })
+    // Setup required capabilities.
+    // In this case you can receive character emotions.
+    .setConfiguration({
+      capabilities: { audio: true, emotions: true },
+    })
+    // Use a full character name.
+    // It should be like workspaces/{WORKSPACE_NAME}/characters/{CHARACTER_NAME}.
+    // Or like workspaces/{WORKSPACE_NAME}/scenes/{SCENE_NAME}.
+    .setScene('workspaces/default-lxmaplyhs-0wyveqmxeqqw/characters/arin_haniz')
+    // Attach handlers
+    .setOnError((err) => console.error(err))
+  .setOnMessage((namex) => {
+    let txnya = namex.text?.text;
+    if ( txnya !=  undefined ){
+    kirimPesan(txnya)
+ }
+    }),
+    connection: "mamam"
+}
 switch(command) {
 case 'tes':
 reply(`*Runtime :* ${runtime(process.uptime())}`)
 break
+case 'sticker': case 's': case 'stiker':
+if (isImage || isQuotedImage){
+	reply (pesan.proses)
+await mbot.downloadAndSaveMediaMessage(msg, "image", `./sticker/${sender.split("@")[0]}.jpeg`)
+var media = fs.readFileSync(`./sticker/${sender.split("@")[0]}.jpeg`)
+var opt = { packname: dconfig.botName, author: pushname }
+mbot.sendImageAsSticker(from, media, msg, opt)
+fs.unlinkSync(media)
+} else {
+reply(`Kirim gambar dengan caption ${prefix+command} atau balas gambar yang sudah dikirim`)
+}
+break
+case 'sgif':
+case 'stickergif':
+case 'stikergif':
+if (isVideo && msg.message.videoMessage.seconds < 10 || isQuotedVideo && quotedmsg.videoMessage.seconds < 10) {
+	reply (pesan.proses)
+var media = await mbot.downloadAndSaveMediaMessage(msg, 'video', `./sticker/${sender}.jpeg`)
+var opt = { packname: dconfig.botName, author: pushname }
+mbot.sendImageAsSticker(from, media, msg, opt)
+fs.unlinkSync(media)
+} else {
+reply(`Kirim video dengan caption ${prefix+command} atau balas video yang sudah dikirim`)
+}
+break
+case 'arin':
+if (fileAda === false ){
+ buatSesi('arin') 
+ reply("Memanggil arin 🌬️")
+ try{
+    arinKoneksi[userId] = arinSesi[userId].arin.build()
+    reply(`Saat ini anda terhubung dengan arin`)
+    arinKoneksi[userId].sendText(`Halo saya ${pushname}` )
+    console.log(arinSesi[userId])
+    }catch(err){
+     reply(`Koneksi terputus
+pemanggilan gagal`)
+    }
+  }else{
+ reply("Masih ada sesi yang berjalan, silahalan hapus sesi teradahulu dengan perintah #hs")
+  }
+break
+case 'hs':
+  if ( fileAda == true ){
+  hapusSesi(filePath)
+  reply('Sesi berhasil di hapus')
+  }else{
+    reply('Tidak ada sesi yang berjalan')
+  }
+  break
+case 'tes2':
+  mbot.sendMessage(`6282211543299@s.whatsapp.net`, {text: "pagi"});
+  break
 default:
+
+
+//kondisi sesi
+if (fileAda === true ){
+  if ( cekSesiHasil === "arin" ){
+    try{
+      console.log(arinKoneksi[userId])
+    arinKoneksi[userId].sendText(chats)
+    }catch(err){
+      console.log(err)
+     reply(`Koneksi terputus
+pemanggilan gagal`)
+hapusSesi(filePath)
+    }
+  }
+}
+
 }} catch (err) {
-console.log(color('[ERROR]', 'red'), err)
-server_eror.push({"error": `${err}`})
-fs.writeFileSync('./database/func_error.json', JSON.stringify(server_eror))
+console.log(errorC(err))
 }}
