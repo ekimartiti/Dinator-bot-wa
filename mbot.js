@@ -3,16 +3,27 @@ const fs = require('fs');
 const {
   InworldClient,
   InworldPacket,
-} = require ('@inworld/nodejs-sdk');
+} = require ('@inworld/nodejs-sdk')
 const { BufferJSON, WA_DEFAULT_EPHEMERAL, proto, prepareWAMessageMedia, areJidsSameUser, getContentType } = require('@adiwajshing/baileys')
 const { downloadContentFromMessage, generateWAMessage, generateWAMessageFromContent, MessageType, buttonsMessage, MessageOptions, Mimetype } = require("@adiwajshing/baileys")
 const { exec, spawn } = require("child_process");
-const { removeEmojis, bytesToSize, getBuffer, fetchJson, getRandom, getGroupAdmins, runtime, sleep, makeid, isUrl} = require("./function/bot_function");
+const { removeEmojis, bytesToSize, getBuffer, fetchJson, getRandom, getGroupAdmins, runtime, sleep, makeid, isUrl, writeExifVid} = require("./function/bot_function");
 const moment = require("moment-timezone");
+const sharp = require("sharp")
 moment.tz.setDefault("Asia/Jakarta").locale("id");
 const dconfig = JSON.parse(fs.readFileSync("config.json"));
+const ffmpeg = require("fluent-ffmpeg");
 const { pesan, errorC } = require(`./function/Ui`)
 //function
+
+async function createSticker(mediaBuffer) {
+  const resizedImageBuffer = await sharp(mediaBuffer)
+    .resize({ width: 512, height: 512 })
+    .toBuffer();
+
+  return resizedImageBuffer;
+}
+
 function cekFile(path) {
   try {
     fs.accessSync(path, fs.constants.F_OK);
@@ -21,7 +32,7 @@ function cekFile(path) {
     return false;
   }
 }
-
+let tses = {}
 let arinSesi = {}
 let arinKoneksi = {}
 //cmd
@@ -171,8 +182,7 @@ if (fileAda === false ){
  try{
     arinKoneksi[userId] = arinSesi[userId].arin.build()
     reply(`Saat ini anda terhubung dengan arin`)
-    arinKoneksi[userId].sendText(`Halo saya ${pushname}` )
-    console.log(arinSesi[userId])
+    arinKoneksi[userId].sendText(`Halo saya ${pushname}` )   
     }catch(err){
      reply(`Koneksi terputus
 pemanggilan gagal`)
@@ -198,8 +208,7 @@ default:
 //kondisi sesi
 if (fileAda === true ){
   if ( cekSesiHasil === "arin" ){
-    try{
-      console.log(arinKoneksi[userId])
+    try{    
     arinKoneksi[userId].sendText(chats)
     }catch(err){
       console.log(err)

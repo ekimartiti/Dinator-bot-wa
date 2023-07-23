@@ -14,6 +14,7 @@ const path = require("path")
 const { tmpdir } = require("os")
 
 
+
 // exports serialize
 const serialize = (mbot, msg) => {
 msg.isGroup = msg.key.remoteJid.endsWith('@g.us')
@@ -112,7 +113,7 @@ return admins
 }
 
 // exports runtime
-exports.runtime = function(seconds) {
+const runtime = function(seconds) {
 seconds = Number(seconds);
 var d = Math.floor(seconds / (3600 * 24));
 var h = Math.floor(seconds % (3600 * 24) / 3600);
@@ -159,45 +160,6 @@ exports.isUrl = (url) => {
 return url.match(new RegExp(/https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&/=]*)/, 'gi'))
 }
 
-//function chache
-
-const uncache = (module = '.') => {
-return new Promise((resolve, reject) => {
-try {
-delete require.cache[require.resolve(module)]
-resolve()
-} catch (e) {
-reject(e)
-}
-})
-}
-
-const nocache = (module, cb = () => { }) => {
-console.log(`Module ${module} sedang diperhatikan terhadap perubahan`)
-fs.watchFile(require.resolve(module), async () => {
-await uncache(require.resolve(module))
-cb(module)
-})
-}
-// Auto Update Server
-require('../mbot')
-nocache('../mbot', module => console.log(chalk.greenBright('[ WHATSAPP BOT ]  ') + time + chalk.cyanBright(` "${module}" Telah diupdate!`)))
-
-require('../index')
-nocache('../index', module => console.log(chalk.greenBright('[ WHATSAPP BOT ]  ') + time + chalk.cyanBright(` "${module}" Telah diupdate!`)))
-
-require('./bot_function')
-nocache('./bot_function', module => console.log(chalk.greenBright('[ WHATSAPP BOT ]  ') + time + chalk.cyanBright(` "${module}" Telah diupdate!`)))
-
-//connection status & data server
-  const status_Connection = async (mbot, update, connectToWhatsApp) => {  
-console.log('Connection update:', update)
-if (update.connection === 'open') 
-console.log("Connected with " + mbot.user.id)
-else if (update.connection === 'close')
-connectToWhatsApp()
-.catch(err => console.log(err))
-}
 
 async function imageToWebp(media) {
 
@@ -309,4 +271,4 @@ async function writeExifVid (media, metadata) {
 
 const Memory_Store = makeInMemoryStore({ logger: logg().child({ level: 'fatal', stream: 'store' }) })
 
-module.exports = { writeExifImg, writeExifVid, Memory_Store, uncache, nocache, status_Connection, serialize}
+module.exports = { writeExifImg, writeExifVid, Memory_Store, serialize, runtime}

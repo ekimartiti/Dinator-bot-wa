@@ -6,8 +6,8 @@ server.all('/', (req, res) => {
 });
 
 module.exports = () => {
-    server.listen(4000, () => {
-        console.log('Server Ready.');
+    server.listen(80, () => {
+        console.log('Server Dijalankan');
     });
     return true;
 }
