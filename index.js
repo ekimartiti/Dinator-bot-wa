@@ -141,11 +141,14 @@ await mbot.sendMessage(jid, { sticker: { url: buffer }, ...options }, { quoted }
 .then( response => {
 fs.unlinkSync(buffer)
 return response
+  
 })
 }
 
 mbot.sendVideoAsSticker = async (jid, path, quoted, options = {}) => {
 let buff = Buffer.isBuffer(path) ? path : /^data:.*?\/.*?;base64,/i.test(path) ? Buffer.from(path.split`,`[1], 'base64') : /^https?:\/\//.test(path) ? await (await getBuffer(path)) : fs.existsSync(path) ? fs.readFileSync(path) : Buffer.alloc(0)
+  console.log(`buff`);
+console.log(`path`);
 let buffer
 if (options && (options.packname || options.author)) {
 buffer = await writeExifVid (buff, options)
@@ -156,6 +159,8 @@ await mbot.sendMessage(jid, { sticker: { url: buffer }, ...options }, { quoted }
 .then( response => {
 fs.unlinkSync(buffer)
 return response
+console.log(`response`);
+  console.log(`buffer`);
 })
 }
 return mbot

@@ -12,7 +12,7 @@ const ff = require('fluent-ffmpeg')
 const webp = require("node-webpmux")
 const path = require("path")
 const { tmpdir } = require("os")
-
+const sharp = require('sharp');
 
 
 // exports serialize
@@ -104,7 +104,7 @@ reject(err)
 })
 
 // exports getGroupAdmins
-exports.getGroupAdmins = function(participants){
+const getGroupAdmins = function(participants){
 let admins = []
 for (let i of participants) {
 i.admin !== null ? admins.push(i.id) : ''
@@ -161,32 +161,98 @@ return url.match(new RegExp(/https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a
 }
 
 
-async function imageToWebp(media) {
+async function createTransparentBackground() {
+  try {
+    // Buat background transparan sebagai buffer
+    const transparentBackground = Buffer.alloc(320 * 320 * 4); // 4 channels: RGBA (Red, Green, Blue, Alpha)
+    transparentBackground.fill(0); // Set semua nilai byte menjadi 0 untuk transparan
 
-    const tmpFileOut = `./sticker/${Crypto.randomBytes(6).readUIntLE(0, 6).toString(36)}.webp`
-    const tmpFileIn = `./sticker/${Crypto.randomBytes(6).readUIntLE(0, 6).toString(36)}.jpg`
+    // Simpan background transparan sebagai file sementara
+    const tmpFileOut = `./sticker/${Crypto.randomBytes(6).readUIntLE(0, 6).toString(36)}.png`;
+    await sharp(transparentBackground, { raw: { width: 320, height: 320, channels: 4 } }).toFile(tmpFileOut);
 
-    fs.writeFileSync(tmpFileIn, media)
-
-    await new Promise((resolve, reject) => {
-        ff(tmpFileIn)
-            .on("error", reject)
-            .on("end", () => resolve(true))
-            .addOutputOptions([
-                "-vcodec",
-                "libwebp",
-                "-vf",
-                "scale='min(320,iw)':min'(320,ih)':force_original_aspect_ratio=decrease,fps=15, pad=320:320:-1:-1:color=white@0.0, split [a][b]; [a] palettegen=reserve_transparent=on:transparency_color=ffffff [p]; [b][p] paletteuse"
-            ])
-            .toFormat("webp")
-            .save(tmpFileOut)
-    })
-
-    const buff = fs.readFileSync(tmpFileOut)
-    fs.unlinkSync(tmpFileOut)
-    fs.unlinkSync(tmpFileIn)
-    return buff
+    return tmpFileOut;
+  } catch (error) {
+    console.error('Terjadi kesalahan:', error.message);
+    throw error;
+  }
 }
+
+async function imageToWebp(media) {
+  try {
+    // Generate nama file sementara untuk output
+    const tmpFileOut = `./sticker/${Crypto.randomBytes(6).readUIntLE(0, 6).toString(36)}.webp`;
+
+    // Konversi gambar ke format WebP menggunakan sharp
+    const image = sharp(media);
+    const { width, height } = await image.metadata();
+
+    // Hitung posisi tengah awal untuk perataan gambar di tengah sebelum resize
+    const originalXPos = Math.max(0, Math.round((320 - width) / 2));
+    const originalYPos = Math.max(0, Math.round((320 - height) / 2));
+
+    // Lakukan operasi resize hanya jika gambar lebih besar dari 320x320 piksel
+    if (width > 320 || height > 320) {
+      // Tentukan ukuran baru gambar jika lebih besar dari 320 piksel
+      const aspectRatio = width / height;
+      let newWidth = width;
+      let newHeight = height;
+
+      if (width > height) {
+        newWidth = 320;
+        newHeight = Math.round(newWidth / aspectRatio);
+      } else {
+        newHeight = 320;
+        newWidth = Math.round(newHeight * aspectRatio);
+      }
+
+      // Lakukan resize gambar
+      await image.resize(newWidth, newHeight);
+
+      // Hitung posisi tengah setelah resize untuk perataan gambar di tengah latar belakang transparan
+      const xPos = Math.max(0, Math.round((320 - newWidth) / 2));
+      const yPos = Math.max(0, Math.round((320 - newHeight) / 2));
+
+      // Buat background transparan
+      const transparentBackground = await createTransparentBackground();
+
+      // Gabungkan gambar yang sudah diperkecil dengan background transparan
+      await sharp(transparentBackground)
+        .composite([{ input: await image.toBuffer(), left: xPos, top: yPos }])
+        .toFormat('webp')
+        .toFile(tmpFileOut);
+
+      // Hapus file sementara background transparan setelah selesai
+      fs.unlinkSync(transparentBackground);
+    } else {
+      // Jika gambar lebih kecil dari 320x320, langsung gabungkan dengan background transparan
+      const transparentBackground = await createTransparentBackground();
+
+      // Gabungkan gambar dengan background transparan
+      await sharp(transparentBackground)
+        .composite([{ input: await image.toBuffer(), left: originalXPos, top: originalYPos }])
+        .toFormat('webp')
+        .toFile(tmpFileOut);
+
+      // Hapus file sementara background transparan setelah selesai
+      fs.unlinkSync(transparentBackground);
+    }
+
+    // Baca hasil gambar dalam format WebP ke dalam buffer
+    const buff = fs.readFileSync(tmpFileOut);
+
+    // Hapus file sementara hasil gambar setelah selesai
+    fs.unlinkSync(tmpFileOut);
+
+    // Kembalikan buffer gambar dalam format WebP
+    return buff;
+  } catch (error) {
+    console.error('Terjadi kesalahan:', error.message);
+    throw error;
+  }
+}
+
+
 
 async function videoToWebp (media) {
 
@@ -271,4 +337,4 @@ async function writeExifVid (media, metadata) {
 
 const Memory_Store = makeInMemoryStore({ logger: logg().child({ level: 'fatal', stream: 'store' }) })
 
-module.exports = { writeExifImg, writeExifVid, Memory_Store, serialize, runtime}
+module.exports = { writeExifImg, writeExifVid, Memory_Store, serialize, runtime, getGroupAdmins}

@@ -9,6 +9,7 @@ const { downloadContentFromMessage, generateWAMessage, generateWAMessageFromCont
 const { exec, spawn } = require("child_process");
 const { removeEmojis, bytesToSize, getBuffer, fetchJson, getRandom, getGroupAdmins, runtime, sleep, makeid, isUrl, writeExifVid} = require("./function/bot_function");
 const moment = require("moment-timezone");
+const CharacterAI = require('node_characterai');
 const sharp = require("sharp")
 moment.tz.setDefault("Asia/Jakarta").locale("id");
 const dconfig = JSON.parse(fs.readFileSync("config.json"));
@@ -32,9 +33,12 @@ function cekFile(path) {
     return false;
   }
 }
-let tses = {}
+let caiSesi = {}
 let arinSesi = {}
 let arinKoneksi = {}
+let caiChat = {}
+let grupSc = {}
+
 //cmd
 module.exports = async(mbot, msg, m, setting, store) => {
   try{
@@ -146,6 +150,8 @@ let cekSesi = function(filePath){
     }),
     connection: "mamam"
 }
+
+      
 switch(command) {
 case 'tes':
 reply(`*Runtime :* ${runtime(process.uptime())}`)
@@ -199,9 +205,71 @@ case 'hs':
     reply('Tidak ada sesi yang berjalan')
   }
   break
-case 'tes2':
-  mbot.sendMessage(`6282211543299@s.whatsapp.net`, {text: "pagi"});
+case 'tes2': mbot.sendMessage(`6282211543299@s.whatsapp.net`, {text: "pagi"});
   break
+  case 'cai':
+if (fileAda === false ){
+  buatSesi('cai') 
+ reply("Memanggil cai 🌬️")
+try {
+caiSesi[userId] = { cai: new CharacterAI(),
+characterId: "8_1NyR8w1dOXmI1uWaieQcd147hecbdIK7CeEAIrdJw"}
+  
+ await caiSesi[userId].cai.authenticateWithToken("eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IkVqYmxXUlVCWERJX0dDOTJCa2N1YyJ9.eyJpc3MiOiJodHRwczovL2NoYXJhY3Rlci1haS51cy5hdXRoMC5jb20vIiwic3ViIjoiZ29vZ2xlLW9hdXRoMnwxMTU1OTEzNzU0OTk4NDI5MjE2OTQiLCJhdWQiOlsiaHR0cHM6Ly9hdXRoMC5jaGFyYWN0ZXIuYWkvIiwiaHR0cHM6Ly9jaGFyYWN0ZXItYWkudXMuYXV0aDAuY29tL3VzZXJpbmZvIl0sImlhdCI6MTY5MDI0NjQyMiwiZXhwIjoxNjkyODM4NDIyLCJhenAiOiJkeUQzZ0UyODFNcWdJU0c3RnVJWFloTDJXRWtucVp6diIsInNjb3BlIjoib3BlbmlkIHByb2ZpbGUgZW1haWwifQ.FoP-xB9swljZmIeBdtrD7Y73_TZiujNm9UU_8lvsMv2mbG7nqKudhioi_Xiiy2LoLdL0uCh6AiIydfwtV6NzxCoEgS-YaQLVd4LCNpQevz9wKt8_V4Pf-e0Bi37IghGd5SEmXDloNj9Cd4-q07KHGLEBbw9K9gCMbXllV-h8bekyz725Mhv7PKtP7VNeOmV-69cGECWXWDmtH7HPPCveFi6zLExocWXfXkYcEsXA4PjsbNA08X1_nBTKt8i-XVESSFdic9nFE0v7bx3hH_XlAesAaN171SV2zrt7r-DfKsCBCVAQkPKi4RpXu5TIf-Urq_F8e3uxAHNbvAS2c5kHmg");
+
+caiChat[userId] = await caiSesi[userId]
+.cai.createOrContinueChat(caiSesi[userId].characterId);
+
+  const response = await caiChat[userId].sendAndAwaitResponse(`Kamu sedang di panggil di chat room menggunakan api balas "Berhasil terhubung ${pushname}"`, true)
+
+    console.log(response);
+    // use response.text to use it in a string.
+kirimPesan(response.text)
+  
+}catch(err){
+     reply(`Koneksi terputus
+pemanggilan gagal`)
+  console.log(err);
+} 
+}else{
+ reply("Masih ada sesi yang berjalan, silahalan hapus sesi teradahulu dengan perintah #hs")
+}
+    break
+  case 'cai_grup': case 'cai_grup_on':
+    if (!isGroup) return reply ("ini bukan grup")
+    if(grupSc[groupId] && grupSc[groupId].cai === true) return reply ("cai di grup ini sudah on")
+  reply("Memanggil cai 🌬️")
+    grupSc[groupId] = {cai: true, caiRc: 0,
+caiSts: false                      }
+    
+try {
+caiSesi[groupId] = { cai: new CharacterAI(),
+characterId: "8_1NyR8w1dOXmI1uWaieQcd147hecbdIK7CeEAIrdJw"}
+  
+ await caiSesi[groupId].cai.authenticateWithToken("eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IkVqYmxXUlVCWERJX0dDOTJCa2N1YyJ9.eyJpc3MiOiJodHRwczovL2NoYXJhY3Rlci1haS51cy5hdXRoMC5jb20vIiwic3ViIjoiZ29vZ2xlLW9hdXRoMnwxMTU1OTEzNzU0OTk4NDI5MjE2OTQiLCJhdWQiOlsiaHR0cHM6Ly9hdXRoMC5jaGFyYWN0ZXIuYWkvIiwiaHR0cHM6Ly9jaGFyYWN0ZXItYWkudXMuYXV0aDAuY29tL3VzZXJpbmZvIl0sImlhdCI6MTY5MDI0NjQyMiwiZXhwIjoxNjkyODM4NDIyLCJhenAiOiJkeUQzZ0UyODFNcWdJU0c3RnVJWFloTDJXRWtucVp6diIsInNjb3BlIjoib3BlbmlkIHByb2ZpbGUgZW1haWwifQ.FoP-xB9swljZmIeBdtrD7Y73_TZiujNm9UU_8lvsMv2mbG7nqKudhioi_Xiiy2LoLdL0uCh6AiIydfwtV6NzxCoEgS-YaQLVd4LCNpQevz9wKt8_V4Pf-e0Bi37IghGd5SEmXDloNj9Cd4-q07KHGLEBbw9K9gCMbXllV-h8bekyz725Mhv7PKtP7VNeOmV-69cGECWXWDmtH7HPPCveFi6zLExocWXfXkYcEsXA4PjsbNA08X1_nBTKt8i-XVESSFdic9nFE0v7bx3hH_XlAesAaN171SV2zrt7r-DfKsCBCVAQkPKi4RpXu5TIf-Urq_F8e3uxAHNbvAS2c5kHmg");
+
+caiChat[groupId] = await caiSesi[groupId].cai.createOrContinueChat(caiSesi[groupId].characterId);
+
+  const response = await caiChat[groupId].sendAndAwaitResponse(`Grup id: ${groupId},
+  Perintah admin: Kamu sedang di panggil di chat room menggunakan api balas "Berhasil terhubung ${pushname}"`, true)
+
+    console.log(response);
+    // use response.text to use it in a string.
+kirimPesan(response.text)
+ grupSc[groupId].caiSts = true
+}catch(err){
+     reply(`Koneksi terputus
+pemanggilan gagal`)
+  grupSc[groupId] = {cai: false}
+  console.log(err);
+} 
+    break
+    case 'cai_grup_off':
+    if(!isGroup) return reply ("Ini bukan grup")
+    if(grupSc[groupId] && grupSc[groupId].cai === false) return reply ("cai di grup ini sudah off")
+grupSc[groupId] = { cai: false }
+    reply("cai off")
+    break
 default:
 
 
@@ -216,8 +284,71 @@ if (fileAda === true ){
 pemanggilan gagal`)
 hapusSesi(filePath)
     }
+    }else if( cekSesiHasil === "cai" ){
+ try {
+        const response = await caiChat[userId].sendAndAwaitResponse(`{ "Saat ini anda sedang berada di chat room saya memanggil kamu dengan api",
+        ${pushname} pesan: ${chats} }`, true)
+
+    console.log(response);
+    // use response.text to use it in a string.
+kirimPesan(response.text)
+  
+ } catch (err) {
+         console.log(err)
+     reply(`Koneksi terputus
+pemanggilan gagal`)
+hapusSesi(filePath) 
+ }
+    
+    }
   }
-}
+
+//grup sesi
+if(isGroup){
+if(grupSc[groupId] && grupSc[groupId].cai === true){
+  if (grupSc[groupId].caiRc == 0){
+    if (grupSc[groupId].caiSts == false)return
+  try {
+        const response = await caiChat[groupId].sendAndAwaitResponse(`{ grup id : ${groupId},
+        catatan dari admin : "Saat ini anda sedang berada di chat room saya memanggil kamu dengan api",
+        ${pushname} mengirim pesan: ${chats} }`, true)
+
+    console.log(response);
+    // use response.text to use it in a string.
+kirimPesan(response.text)
+  
+ } catch (err) {
+    console.log(err);
+    grupSc[groupId].caiRc = + 1
+  }
+} else if (!grupSc[groupId].caiRc == 0){
+  reply ("koneksi terputus, sedang menghubukan dengan cai")
+  try {   
+caiSesi[groupId] = { cai: new CharacterAI(),
+characterId: "8_1NyR8w1dOXmI1uWaieQcd147hecbdIK7CeEAIrdJw"}
+  
+ await caiSesi[groupId].cai.authenticateWithToken("eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IkVqYmxXUlVCWERJX0dDOTJCa2N1YyJ9.eyJpc3MiOiJodHRwczovL2NoYXJhY3Rlci1haS51cy5hdXRoMC5jb20vIiwic3ViIjoiZ29vZ2xlLW9hdXRoMnwxMTU1OTEzNzU0OTk4NDI5MjE2OTQiLCJhdWQiOlsiaHR0cHM6Ly9hdXRoMC5jaGFyYWN0ZXIuYWkvIiwiaHR0cHM6Ly9jaGFyYWN0ZXItYWkudXMuYXV0aDAuY29tL3VzZXJpbmZvIl0sImlhdCI6MTY5MDI0NjQyMiwiZXhwIjoxNjkyODM4NDIyLCJhenAiOiJkeUQzZ0UyODFNcWdJU0c3RnVJWFloTDJXRWtucVp6diIsInNjb3BlIjoib3BlbmlkIHByb2ZpbGUgZW1haWwifQ.FoP-xB9swljZmIeBdtrD7Y73_TZiujNm9UU_8lvsMv2mbG7nqKudhioi_Xiiy2LoLdL0uCh6AiIydfwtV6NzxCoEgS-YaQLVd4LCNpQevz9wKt8_V4Pf-e0Bi37IghGd5SEmXDloNj9Cd4-q07KHGLEBbw9K9gCMbXllV-h8bekyz725Mhv7PKtP7VNeOmV-69cGECWXWDmtH7HPPCveFi6zLExocWXfXkYcEsXA4PjsbNA08X1_nBTKt8i-XVESSFdic9nFE0v7bx3hH_XlAesAaN171SV2zrt7r-DfKsCBCVAQkPKi4RpXu5TIf-Urq_F8e3uxAHNbvAS2c5kHmg");
+
+caiChat[groupId] = await caiSesi[groupId].cai.createOrContinueChat(caiSesi[groupId].characterId);
+
+  const response = await caiChat[groupId].sendAndAwaitResponse(`Grup id: ${groupId},
+  Perintah admin: Kamu sedang di panggil di chat room menggunakan api balas "Berhasil terhubung ${pushname}"`, true)
+
+    console.log(response);
+    // use response.text to use it in a string.
+ grupSc[groupId].caiRc = 0 
+}catch(err){
+ grupSc[groupId].caiRc = + 1    
+}     
+    } else if(grupSc[groupId].caiRc == 3){
+         console.log(err)
+     reply(`Koneksi terputus
+pemanggilan gagal`)
+grupSc[groupId] = {cai: false}
+  grupSc[groupId].caiRc = 0  
+  }
+ }
+}  
 
 }} catch (err) {
 console.log(errorC(err))
