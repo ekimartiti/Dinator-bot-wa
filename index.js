@@ -31,7 +31,6 @@ const { state, saveCreds } = await useMultiFileAuthState(`./${sessionName ? sess
 const { version, isLatest } = await fetchLatestWaWebVersion().catch(() => fetchLatestBaileysVersion());
 
 const mbot = makeWASocket({
-	version: [2, 2323, 4],
 printQRInTerminal: true,
 logger: pino({ level: 'fatal' }),
 browser: ['Dinator','Safari','1.0.0'],

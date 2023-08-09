@@ -4,10 +4,12 @@ const {
   InworldClient,
   InworldPacket,
 } = require ('@inworld/nodejs-sdk')
+const axios = require('axios');
 const { BufferJSON, WA_DEFAULT_EPHEMERAL, proto, prepareWAMessageMedia, areJidsSameUser, getContentType } = require('@adiwajshing/baileys')
 const { downloadContentFromMessage, generateWAMessage, generateWAMessageFromContent, MessageType, buttonsMessage, MessageOptions, Mimetype } = require("@adiwajshing/baileys")
 const { exec, spawn } = require("child_process");
 const { removeEmojis, bytesToSize, getBuffer, fetchJson, getRandom, getGroupAdmins, runtime, sleep, makeid, isUrl, writeExifVid} = require("./function/bot_function");
+const os = require('os');
 const moment = require("moment-timezone");
 const CharacterAI = require('node_characterai');
 const sharp = require("sharp")
@@ -15,7 +17,32 @@ moment.tz.setDefault("Asia/Jakarta").locale("id");
 const dconfig = JSON.parse(fs.readFileSync("config.json"));
 const ffmpeg = require("fluent-ffmpeg");
 const { pesan, errorC } = require(`./function/Ui`)
+
+const cpuSpeedInMHz = os.cpus()[0].speed;
+const totalRAMInGB = os.totalmem() / (1024 * 1024 * 1024); // convert bytes to gigabytes
 //function
+
+async function chatWithGpt3_5(prompt) {
+  try {
+    const response = await axios.post(
+      'https://api.openai.com/v1/engines/text-davinci-003/completions',
+      {
+        prompt: prompt,
+        max_tokens: 3000,  // Jumlah token maksimum untuk respon model
+      },
+      {
+        headers: {
+          'Authorization': `Bearer ${dconfig.openAi}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    return response.data.choices[0].text.trim();
+  } catch (error) {
+    return error.message;
+  }
+}
 
 async function createSticker(mediaBuffer) {
   const resizedImageBuffer = await sharp(mediaBuffer)
@@ -213,14 +240,14 @@ if (fileAda === false ){
  reply("Memanggil cai 🌬️")
 try {
 caiSesi[userId] = { cai: new CharacterAI(),
-characterId: "8_1NyR8w1dOXmI1uWaieQcd147hecbdIK7CeEAIrdJw"}
+characterId: dconfig.caicDtr}
   
- await caiSesi[userId].cai.authenticateWithToken("eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IkVqYmxXUlVCWERJX0dDOTJCa2N1YyJ9.eyJpc3MiOiJodHRwczovL2NoYXJhY3Rlci1haS51cy5hdXRoMC5jb20vIiwic3ViIjoiZ29vZ2xlLW9hdXRoMnwxMTU1OTEzNzU0OTk4NDI5MjE2OTQiLCJhdWQiOlsiaHR0cHM6Ly9hdXRoMC5jaGFyYWN0ZXIuYWkvIiwiaHR0cHM6Ly9jaGFyYWN0ZXItYWkudXMuYXV0aDAuY29tL3VzZXJpbmZvIl0sImlhdCI6MTY5MDI0NjQyMiwiZXhwIjoxNjkyODM4NDIyLCJhenAiOiJkeUQzZ0UyODFNcWdJU0c3RnVJWFloTDJXRWtucVp6diIsInNjb3BlIjoib3BlbmlkIHByb2ZpbGUgZW1haWwifQ.FoP-xB9swljZmIeBdtrD7Y73_TZiujNm9UU_8lvsMv2mbG7nqKudhioi_Xiiy2LoLdL0uCh6AiIydfwtV6NzxCoEgS-YaQLVd4LCNpQevz9wKt8_V4Pf-e0Bi37IghGd5SEmXDloNj9Cd4-q07KHGLEBbw9K9gCMbXllV-h8bekyz725Mhv7PKtP7VNeOmV-69cGECWXWDmtH7HPPCveFi6zLExocWXfXkYcEsXA4PjsbNA08X1_nBTKt8i-XVESSFdic9nFE0v7bx3hH_XlAesAaN171SV2zrt7r-DfKsCBCVAQkPKi4RpXu5TIf-Urq_F8e3uxAHNbvAS2c5kHmg");
+ await caiSesi[userId].cai.authenticateWithToken(dconfig.caiKey)
 
 caiChat[userId] = await caiSesi[userId]
 .cai.createOrContinueChat(caiSesi[userId].characterId);
 
-  const response = await caiChat[userId].sendAndAwaitResponse(`Kamu sedang di panggil di chat room menggunakan api balas "Berhasil terhubung ${pushname}"`, true)
+  const response = await caiChat[userId].sendAndAwaitResponse('halo bro', true)
 
     console.log(response);
     // use response.text to use it in a string.
@@ -244,14 +271,14 @@ caiSts: false                      }
     
 try {
 caiSesi[groupId] = { cai: new CharacterAI(),
-characterId: "8_1NyR8w1dOXmI1uWaieQcd147hecbdIK7CeEAIrdJw"}
+characterId: dconfig.caicDtr}
   
- await caiSesi[groupId].cai.authenticateWithToken("eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IkVqYmxXUlVCWERJX0dDOTJCa2N1YyJ9.eyJpc3MiOiJodHRwczovL2NoYXJhY3Rlci1haS51cy5hdXRoMC5jb20vIiwic3ViIjoiZ29vZ2xlLW9hdXRoMnwxMTU1OTEzNzU0OTk4NDI5MjE2OTQiLCJhdWQiOlsiaHR0cHM6Ly9hdXRoMC5jaGFyYWN0ZXIuYWkvIiwiaHR0cHM6Ly9jaGFyYWN0ZXItYWkudXMuYXV0aDAuY29tL3VzZXJpbmZvIl0sImlhdCI6MTY5MDI0NjQyMiwiZXhwIjoxNjkyODM4NDIyLCJhenAiOiJkeUQzZ0UyODFNcWdJU0c3RnVJWFloTDJXRWtucVp6diIsInNjb3BlIjoib3BlbmlkIHByb2ZpbGUgZW1haWwifQ.FoP-xB9swljZmIeBdtrD7Y73_TZiujNm9UU_8lvsMv2mbG7nqKudhioi_Xiiy2LoLdL0uCh6AiIydfwtV6NzxCoEgS-YaQLVd4LCNpQevz9wKt8_V4Pf-e0Bi37IghGd5SEmXDloNj9Cd4-q07KHGLEBbw9K9gCMbXllV-h8bekyz725Mhv7PKtP7VNeOmV-69cGECWXWDmtH7HPPCveFi6zLExocWXfXkYcEsXA4PjsbNA08X1_nBTKt8i-XVESSFdic9nFE0v7bx3hH_XlAesAaN171SV2zrt7r-DfKsCBCVAQkPKi4RpXu5TIf-Urq_F8e3uxAHNbvAS2c5kHmg");
+ await caiSesi[groupId].cai.authenticateWithToken(dconfig.caiKey);
 
 caiChat[groupId] = await caiSesi[groupId].cai.createOrContinueChat(caiSesi[groupId].characterId);
 
   const response = await caiChat[groupId].sendAndAwaitResponse(`Grup id: ${groupId},
-  Perintah admin: Kamu sedang di panggil di chat room menggunakan api balas "Berhasil terhubung ${pushname}"`, true)
+  Perintah admin: Kamu sedang di panggil di chat room menggunakan api ayok sapa member lainnya`, true)
 
     console.log(response);
     // use response.text to use it in a string.
@@ -269,6 +296,36 @@ pemanggilan gagal`)
     if(grupSc[groupId] && grupSc[groupId].cai === false) return reply ("cai di grup ini sudah off")
 grupSc[groupId] = { cai: false }
     reply("cai off")
+    break
+  case 'ai':
+if(!q) return reply ('Text nya mana')
+chatWithGpt3_5(q)
+  .then(response => {
+    kirimPesan(response) 
+    console.log(response)})
+  .catch(error => console.error(error))
+    break;
+  case 'speed':   
+const cpuSpeedInMHz = os.cpus()[0].speed;
+const totalCores = os.cpus().length;
+const usedCPU = process.cpuUsage().user;
+const sysCPU = process.cpuUsage().system;
+const totalCPU = usedCPU + sysCPU;
+const cpuPercent = (totalCPU / (os.cpus().length * 1000)) * 100;
+    
+const totalRAMInGB = os.totalmem() / (1024 * 1024 * 1024); // total RAM in gigabytes
+const freeRAMInGB = os.freemem() / (1024 * 1024 * 1024); // free RAM in gigabytes
+const usedRAMInGB = totalRAMInGB - freeRAMInGB; // used RAM in gigabytes
+
+    reply(`Total RAM: ${totalRAMInGB.toFixed(2)} GB
+Used RAM: ${usedRAMInGB.toFixed(2)} GB
+Free RAM: ${freeRAMInGB.toFixed(2)} GB
+
+Total Core CPU: ${totalCores}
+Penggunaan CPU saat ini: ${cpuPercent.toFixed(2)}%
+Kecepatan CPU: ${cpuSpeedInMHz} MHz
+`)
+
     break
 default:
 
@@ -325,9 +382,9 @@ kirimPesan(response.text)
   reply ("koneksi terputus, sedang menghubukan dengan cai")
   try {   
 caiSesi[groupId] = { cai: new CharacterAI(),
-characterId: "8_1NyR8w1dOXmI1uWaieQcd147hecbdIK7CeEAIrdJw"}
+characterId: dconfig.caicDtr}
   
- await caiSesi[groupId].cai.authenticateWithToken("eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IkVqYmxXUlVCWERJX0dDOTJCa2N1YyJ9.eyJpc3MiOiJodHRwczovL2NoYXJhY3Rlci1haS51cy5hdXRoMC5jb20vIiwic3ViIjoiZ29vZ2xlLW9hdXRoMnwxMTU1OTEzNzU0OTk4NDI5MjE2OTQiLCJhdWQiOlsiaHR0cHM6Ly9hdXRoMC5jaGFyYWN0ZXIuYWkvIiwiaHR0cHM6Ly9jaGFyYWN0ZXItYWkudXMuYXV0aDAuY29tL3VzZXJpbmZvIl0sImlhdCI6MTY5MDI0NjQyMiwiZXhwIjoxNjkyODM4NDIyLCJhenAiOiJkeUQzZ0UyODFNcWdJU0c3RnVJWFloTDJXRWtucVp6diIsInNjb3BlIjoib3BlbmlkIHByb2ZpbGUgZW1haWwifQ.FoP-xB9swljZmIeBdtrD7Y73_TZiujNm9UU_8lvsMv2mbG7nqKudhioi_Xiiy2LoLdL0uCh6AiIydfwtV6NzxCoEgS-YaQLVd4LCNpQevz9wKt8_V4Pf-e0Bi37IghGd5SEmXDloNj9Cd4-q07KHGLEBbw9K9gCMbXllV-h8bekyz725Mhv7PKtP7VNeOmV-69cGECWXWDmtH7HPPCveFi6zLExocWXfXkYcEsXA4PjsbNA08X1_nBTKt8i-XVESSFdic9nFE0v7bx3hH_XlAesAaN171SV2zrt7r-DfKsCBCVAQkPKi4RpXu5TIf-Urq_F8e3uxAHNbvAS2c5kHmg");
+ await caiSesi[groupId].cai.authenticateWithToken(dconfig.caiKey);
 
 caiChat[groupId] = await caiSesi[groupId].cai.createOrContinueChat(caiSesi[groupId].characterId);
 
