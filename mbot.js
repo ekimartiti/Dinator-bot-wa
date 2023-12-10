@@ -240,7 +240,7 @@ if (fileAda === false ){
  reply("Memanggil cai 🌬️")
 try {
 caiSesi[userId] = { cai: new CharacterAI(),
-characterId: dconfig.caicDtr}
+characterId: dconfig.caiArimakana}
   
  await caiSesi[userId].cai.authenticateWithToken(dconfig.caiKey)
 

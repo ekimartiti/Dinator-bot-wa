@@ -1,7 +1,8 @@
 "use strict";
 const { gaya } = require("./function/Ui")
 console.log(gaya.dinatorG)
-const { default: makeWASocket, DisconnectReason, useMultiFileAuthState, makeInMemoryStore, downloadContentFromMessage, jidDecode, generateForwardMessageContent, generateWAMessageFromContent, fetchLatestBaileysVersion, fetchLatestWaWebVersion } = require("@adiwajshing/baileys")
+const { default: makeWASocket, DisconnectReason, useMultiFileAuthState, makeInMemoryStore, downloadContentFromMessage, jidDecode, generateForwardMessageContent, generateWAMessageFromContent, fetchLatestBaileysVersion, fetchLatestWaWebVersion } = require("@whiskeysockets/baileys")
+const { Boom } = require("@hapi/boom")
 const chalk = require('chalk')
 const { pino, logg } = require('pino')
 const fs = require("fs");
