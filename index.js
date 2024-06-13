@@ -1,22 +1,43 @@
 "use strict";
-const { default: makeWASocket, DisconnectReason, useSingleFileAuthState, makeInMemoryStore, downloadContentFromMessage, jidDecode, generateForwardMessageContent, generateWAMessageFromContent } = require("@adiwajshing/baileys")
+const { gaya } = require("./function/Ui")
+console.log(gaya.dinatorG)
+const { default: makeWASocket, DisconnectReason, useMultiFileAuthState, makeInMemoryStore, downloadContentFromMessage, jidDecode, generateForwardMessageContent, generateWAMessageFromContent, fetchLatestBaileysVersion, fetchLatestWaWebVersion } = require("@whiskeysockets/baileys")
+const { Boom } = require("@hapi/boom")
 const chalk = require('chalk')
-const { dinatorG } = require(`./function/Ui`)
-console.log(dinatorG )
-const logg = require('pino')
+const { pino, logg } = require('pino')
 const fs = require("fs");
-const { serialize, fetchJson, getBuffer, nocache, uncache, status_Connection, Memory_Store } = require("./function/bot_function");
+const { serialize, fetchJson, getBuffer, writeExifImg, writeExifVid} = require("./function/bot_function");
+const {uncache, nocache, status_Connection } = require("./function/serFun.js")
+const store = makeInMemoryStore({ logger: pino().child({ level: "silent", stream: "store" }) });
 let setting = JSON.parse(fs.readFileSync('./config.json'));
-let session = `./${setting.sessionName}.json`
-const { state, saveState } = useSingleFileAuthState(session)
+const sessionName = setting.sessionName
+
+const keepAlive = require('./server');
+const Monitor = require('ping-monitor');
+
+keepAlive();
+const monitor = new Monitor({
+    website: 'https://dinator-bot-wa.ekimartiti.repl.co',
+    title: 'bot server',
+    interval: 2
+});
+
+monitor.on('up', (res) => console.log(`${res.website} its on.`));
+monitor.on('down', (res) => console.log(`${res.website} it has died - ${res.statusMessage}`));
+monitor.on('stop', (website) => console.log(`${website} has stopped.`) );
+monitor.on('error', (error) => console.log(error));
+
 const connectToWhatsApp = async () => {
+const { state, saveCreds } = await useMultiFileAuthState(`./${sessionName ? sessionName : "session"}`);
+const { version, isLatest } = await fetchLatestWaWebVersion().catch(() => fetchLatestBaileysVersion());
+
 const mbot = makeWASocket({
 printQRInTerminal: true,
-logger: logg({ level: 'fatal' }),
+logger: pino({ level: 'fatal' }),
 browser: ['Dinator','Safari','1.0.0'],
 auth: state
 })
-Memory_Store.bind(mbot.ev)
+store.bind(mbot.ev);
 
 mbot.ev.on('messages.upsert', async m => {
 var msg = m.messages[0]
@@ -24,10 +45,10 @@ if (!m.messages) return;
 if (msg.key && msg.key.remoteJid == "status@broadcast") return
 msg = serialize(mbot, msg)
 msg.isBaileys = msg.key.id.startsWith('BAE5') || msg.key.id.startsWith('3EB0')
-require('./mbot')(mbot, msg, m, setting, Memory_Store)
+require('./mbot')(mbot, msg, m, setting, store)
 })
 
-mbot.ev.on('creds.update', () => saveState)
+mbot.ev.on ('creds.update', saveCreds)
 
 mbot.reply = (from, content, msg) => mbot.sendMessage(from, { text: content }, { quoted: msg })
 
@@ -120,14 +141,17 @@ await mbot.sendMessage(jid, { sticker: { url: buffer }, ...options }, { quoted }
 .then( response => {
 fs.unlinkSync(buffer)
 return response
+  
 })
 }
 
 mbot.sendVideoAsSticker = async (jid, path, quoted, options = {}) => {
 let buff = Buffer.isBuffer(path) ? path : /^data:.*?\/.*?;base64,/i.test(path) ? Buffer.from(path.split`,`[1], 'base64') : /^https?:\/\//.test(path) ? await (await getBuffer(path)) : fs.existsSync(path) ? fs.readFileSync(path) : Buffer.alloc(0)
+  console.log(`buff`);
+console.log(`path`);
 let buffer
 if (options && (options.packname || options.author)) {
-buffer = await writeExifVid(buff, options)
+buffer = await writeExifVid (buff, options)
 } else {
 buffer = await videoToWebp(buff)
 }
@@ -135,6 +159,8 @@ await mbot.sendMessage(jid, { sticker: { url: buffer }, ...options }, { quoted }
 .then( response => {
 fs.unlinkSync(buffer)
 return response
+console.log(`response`);
+  console.log(`buffer`);
 })
 }
 return mbot

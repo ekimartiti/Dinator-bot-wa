@@ -1,6 +1,7 @@
 const chalk = require('chalk');
 
-const dinatorG = `${chalk.red(`
+const gaya = {
+ dinatorG: `${chalk.red(`
  ######  ### #     #    #    ####### ####### ######     
  #     #  #  ##    #   # #      #    #     # #     #    
  #     #  #  # #   #  #   #     #    #     # #     #    
@@ -8,9 +9,9 @@ const dinatorG = `${chalk.red(`
  #     #  #  #   # # #######    #    #     # #   #      
  #     #  #  #    ## #     #    #    #     # #    #     
  ######  ### #     # #     #    #    ####### #     #    
-                                                        `)}`;
+                                                        `)}`,
 
-const kidattG = `${chalk.red(`
+ kidattG: `${chalk.red(`
                                    
                  .                 
               .......              
@@ -30,6 +31,16 @@ const kidattG = `${chalk.red(`
          .^^^^^^^^^^^^^^:          
           ::^^^^. .^^^::           
              :^^:.:^^:             
-              .::::::              `)}`;
+              .::::::              `)}`,}
+              
 
-module.exports = {dinatorG, kidattG};
+const pesan = {
+  proses: "Sedang memproses data",
+  error: "Error terjadi kesalahan"
+}
+
+const errorC = (err) => {
+  return chalk.red(`[ERROR] ${err}`);
+};
+
+module.exports = {gaya, pesan, errorC};
